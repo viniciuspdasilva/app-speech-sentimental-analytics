@@ -16,13 +16,13 @@ api = Api(app)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 UPLOAD_FOLDER = 'static/img'
 
-authenticator = IAMAuthenticator('8mmRiDi4dO5LVaMKurWAwbU0q2IS4arE0BpEGowSwQk1')
+authenticator = IAMAuthenticator('8')
 speech_to_text = SpeechToTextV1(
     authenticator=authenticator
 )
 
 speech_to_text.set_service_url(
-    'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/268b7b1c-7dbd-4929-9d09-5d6c0d755f2b'
+    '{api.url}'
 )
 
 
