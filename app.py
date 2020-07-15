@@ -3,6 +3,7 @@ import os
 
 import werkzeug
 from flask import Flask
+from flask_cors import CORS
 from flask_restful import Resource, Api, reqparse
 from ibm_watson import SpeechToTextV1
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
@@ -13,16 +14,18 @@ from lib.module.api import SpeechToText
 
 app = Flask(__name__)
 api = Api(app)
+CORS(app)
+mensagem = ''
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 UPLOAD_FOLDER = 'static/img'
 
-authenticator = IAMAuthenticator('8')
+authenticator = IAMAuthenticator('8mmRiDi4dO5LVaMKurWAwbU0q2IS4arE0BpEGowSwQk1')
 speech_to_text = SpeechToTextV1(
     authenticator=authenticator
 )
 
 speech_to_text.set_service_url(
-    '{api.url}'
+    'https://api.us-south.speech-to-text.watson.cloud.ibm.com/instances/268b7b1c-7dbd-4929-9d09-5d6c0d755f2b'
 )
 
 
@@ -35,7 +38,8 @@ class MyRecognizeCallback(RecognizeCallback):
         print(json.dumps(data, indent=2))
 
     def on_error(self, error):
-        return format_msg(Status.SERVER_ERROR, error, Response.ERROR_SERVER)
+        mensagem = format_msg(Status.SERVER_ERROR, error, Response.ERROR_SERVER)
+        print(mensagem)
 
     def on_inactivity_timeout(self, error):
         print('Inactivity timeout: {}'.format(error))
@@ -44,7 +48,7 @@ class MyRecognizeCallback(RecognizeCallback):
 myRecognizeCallback = MyRecognizeCallback()
 
 
-def format_msg(status: Status, msg: str, code: Response) -> object:
+def format_msg(status: Status, msg, code: Response) -> object:
     return {
         'status': status,
         'message': msg,
@@ -66,18 +70,31 @@ class SpeechResource(Resource):
             return format_msg(Status.SERVER_ERROR, '', Response.ERROR_SERVER)
         file = args['file']
         if file:
-            filename = 'image.png'
-            file.save(os.path.join(UPLOAD_FOLDER, filename))
-            audio_source = AudioSource(file)
-            response = speech_to_text.recognize_using_websocket(
-                audio=audio_source,
-                content_type='audio/webm',
-                model='pt-BR_BroadbandModel',
-                interim_results=False,
-                recognize_callback=myRecognizeCallback,
-            )
-            print(response)
-            return format_msg(Status.SUCCESS, filename, Response.SUCCESS_RESPONSE)
+            # response = speech_to_text.recognize(
+            #     audio=file,
+            #     content_type='audio/wav',
+            #     model='pt-BR_BroadbandModel',
+            #     interim_results=False,
+            # )
+            #
+            response = {
+                "result": {
+                    "result_index": 0,
+                    "results": [
+                        {
+                            "final": True,
+                            "alternatives": [
+                                {
+                                    "transcript": "ap\u00f3s saber que a fazenda ver manuais aqui ",
+                                    "confidence": 0.61
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "status_code": 200
+            }
+            return response['result']
         return format_msg(Status.SERVER_ERROR, 'File not found or file not save', Response.ERROR_SERVER)
 
 
